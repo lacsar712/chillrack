@@ -38,7 +38,7 @@ func (a *App) ValidateBranchFlow(ctx context.Context, mf model.ManifoldID, lpm f
 		return err
 	}
 	if err := a.plant.ValidateFlows(ctx); err != nil {
-		return fmt.Errorf("plant: %v", err)
+		return fmt.Errorf("plant: %w", err)
 	}
 	return nil
 }
