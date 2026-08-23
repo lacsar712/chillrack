@@ -71,12 +71,12 @@ func (a *App) PrechargeBranch(ctx context.Context, valve model.ValveID, mf model
 	if !ok {
 		return model.Wrap("precharge", "valve", model.ErrInterlock)
 	}
+	defer release()
 	if err := a.plant.PrimeManifold(ctx, mf); err != nil {
 		return err
 	}
 	if r, ok := a.plant.Sensors().Reading("supply-temp"); ok && r.Celsius > prechargeTempLimitC {
 		return model.Wrap("precharge", "temp", model.ErrConflict)
 	}
-	release()
 	return nil
 }
