@@ -46,11 +46,14 @@ func (a *App) ValidateBranchFlow(ctx context.Context, mf model.ManifoldID, lpm f
 func (a *App) HandleCompressorTrip(ctx context.Context, id model.CompressorID) error {
 	tripErr := a.plant.Coordinator().Trip(ctx, id)
 	rack := model.RackID(a.cfg.RackID)
-	if err := a.alarms.Raise(ctx, "COMP_TRIP", rack, 3); err != nil {
-		return err
-	}
+	// Alarm elevation is advisory: a buffer-full conflict must not mask the
+	// compressor-domain fault, which interlock retry distinguishes via ErrCompressor.
+	raiseErr := a.alarms.Raise(ctx, "COMP_TRIP", rack, 3)
 	if tripErr != nil {
-		return fmt.Errorf("plant fault: compressor %s tripped", id)
+		return fmt.Errorf("plant fault: compressor %s tripped: %w", id, tripErr)
+	}
+	if raiseErr != nil {
+		return raiseErr
 	}
 	return fmt.Errorf("plant fault: compressor %s tripped", id)
 }
