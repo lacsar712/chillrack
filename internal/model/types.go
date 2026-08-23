@@ -87,7 +87,8 @@ func (s CoolantSchedule) Clone() CoolantSchedule {
 	if len(s.Entries) == 0 {
 		return out
 	}
-	out.Entries = s.Entries
+	out.Entries = make([]CoolantScheduleEntry, len(s.Entries))
+	copy(out.Entries, s.Entries)
 	return out
 }
 
