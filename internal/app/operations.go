@@ -59,7 +59,10 @@ func (a *App) ConfirmThermalHold(ctx context.Context) error {
 	ch := make(chan model.ThermalReading)
 	close(ch)
 	if err := a.plant.HoldController().WaitStable(ctx, ch); err != nil {
-		return fmt.Errorf("thermal: schedule empty")
+		// Preserve the thermal-hold semantic from the control layer so callers
+		// can distinguish an unsettled hold window (ErrThermalHold) from a
+		// genuinely empty schedule (ErrScheduleEmpty) via errors.Is.
+		return model.Wrap("thermal", "hold", err)
 	}
 	return nil
 }
