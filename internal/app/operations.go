@@ -19,11 +19,21 @@ func (a *App) BeginCycleScope(ctx context.Context, rack model.RackID) (context.C
 	if a.activeCancel != nil {
 		a.activeCancel()
 	}
+	// Assign a fresh token so a belated release() from a superseded cycle can be
+	// distinguished from the currently-owned scope. Without this, the stale
+	// release overwrites activeCancel=nil and the next rack switch can no longer
+	// cancel the live cycle — leaking spurious actuation pulses across racks.
+	token := a.cycleToken + 1
+	a.cycleToken = token
 	a.activeCancel = cancel
 	a.cycleMu.Unlock()
 	release := func() {
 		a.cycleMu.Lock()
-		a.activeCancel = nil
+		// Only clear the live scope if this release still owns it. A cycle that was
+		// already superseded (or re-entered) leaves the current owner untouched.
+		if a.cycleToken == token {
+			a.activeCancel = nil
+		}
 		a.cycleMu.Unlock()
 		cancel()
 	}

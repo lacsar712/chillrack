@@ -29,9 +29,14 @@ type App struct {
 	alarms  *alarms.Emitter
 	lock    *interlock.ValveLock
 	valves  *cooling.ValveActuator
-	router      *manifold.Router
+	router       *manifold.Router
 	cycleMu      sync.Mutex
 	activeCancel context.CancelFunc
+
+	// cycleToken identifies the currently-owned cycle scope. A belated release()
+	// compares its own token against this; if they differ, the release belongs to a
+	// superseded cycle and must leave the live scope untouched.
+	cycleToken uint64
 }
 
 func New(cfg config.Config) (*App, error) {
