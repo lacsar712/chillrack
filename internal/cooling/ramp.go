@@ -27,6 +27,14 @@ func NewFlowRamp(clk clock.Clock, step time.Duration, chunk float64) *FlowRamp {
 
 func (r *FlowRamp) Ramp(ctx context.Context, fc *FlowController, target model.FlowSetpoint) error {
 	for {
+		// Reap the operator abort before each chunk so cancellation propagates
+		// along the stepwise ramp instead of letting the setpoint keep
+		// marching toward the target.
+		select {
+		case <-ctx.Done():
+			return model.Wrap("ramp", "canceled", context.Cause(ctx))
+		default:
+		}
 		cur := fc.Setpoint()
 		if cur.LitersPerMinute == target.LitersPerMinute && cur.TolerancePct == target.TolerancePct {
 			return nil
