@@ -23,9 +23,10 @@ func (f *RackFSM) State() model.RackState { return f.state }
 func (f *RackFSM) Apply(ctx context.Context, event string) error {
 	next, err := MustRack(f.state, event)
 	if err != nil {
-		if f.onChange != nil && event == "flow_ok" {
-			_ = f.onChange(ctx, f.id, f.state, model.RackCirculate)
-		}
+		// Illegal transitions must not move the rack state nor fire any
+		// side effect. Emitting on the denied path would let an out-of-band
+		// event (e.g. a stray "flow_ok" while idle) dispatch compressor
+		// start commands despite the rack never leaving idle.
 		return err
 	}
 	prev := f.state
