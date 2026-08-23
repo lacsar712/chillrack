@@ -50,7 +50,7 @@ func (p *ChillerPlant) ExecutePlan(ctx context.Context, plan CoordinationPlan) e
 		p.BindFlow(mf, plan.Setpoints[mf])
 	}
 	for _, id := range plan.Compressors {
-		if err := p.coordinator.Start(context.Background(), id); err != nil {
+		if err := p.coordinator.Start(ctx, id); err != nil {
 			return err
 		}
 	}
