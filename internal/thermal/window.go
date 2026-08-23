@@ -17,7 +17,7 @@ func NewWindow(start time.Time, duration time.Duration, hold float64) Window {
 	return Window{Start: start, Duration: duration, HoldC: hold}
 }
 
-func (w Window) Active(clk clock.Clock) bool { return time.Since(w.Start) < w.Duration }
+func (w Window) Active(clk clock.Clock) bool { return clk.Now().Sub(w.Start) < w.Duration }
 
 func (w Window) Remaining(clk clock.Clock) time.Duration {
 	end := w.Start.Add(w.Duration)
