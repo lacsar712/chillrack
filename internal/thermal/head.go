@@ -1,0 +1,68 @@
+package level
+
+import (
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/lacsar712/chillrack/internal/model"
+)
+
+var (
+	ErrThermalLow  = errors.New("coolant level below minimum")
+	ErrThermalHigh = errors.New("coolant level above maximum")
+	ErrUnstable    = errors.New("head reading unstable")
+	ErrBadQuality  = errors.New("head sample quality too low")
+	ErrStaleLevel  = errors.New("head sample stale")
+)
+
+type Monitor struct {
+	minQuality float64
+}
+
+func NewMonitor(minQuality float64) *Monitor {
+	if minQuality <= 0 {
+		minQuality = 0.5
+	}
+	return &Monitor{minQuality: minQuality}
+}
+
+func (m *Monitor) Validate(sample model.ThermalSample, minM, maxM float64) error {
+	if sample.Meters < 0 {
+		return fmt.Errorf("%w: negative reading", model.ErrInvalidSample)
+	}
+	if sample.Quality < m.minQuality {
+		return fmt.Errorf("%w: quality %.2f", ErrBadQuality, sample.Quality)
+	}
+	if !sample.At.IsZero() && time.Since(sample.At) > 5*time.Minute {
+		return fmt.Errorf("%w: age %s", ErrStaleLevel, time.Since(sample.At).Round(time.Second))
+	}
+	if sample.Meters < minM {
+		return fmt.Errorf("%w: %.3f < %.3f", ErrThermalLow, sample.Meters, minM)
+	}
+	if sample.Meters > maxM {
+		return fmt.Errorf("%w: %.3f > %.3f", ErrThermalHigh, sample.Meters, maxM)
+	}
+	return nil
+}
+
+func IsLow(err error) bool      { return errors.Is(err, ErrThermalLow) }
+func IsHigh(err error) bool     { return errors.Is(err, ErrThermalHigh) }
+func IsUnstable(err error) bool { return errors.Is(err, ErrUnstable) }
+func IsStale(err error) bool    { return errors.Is(err, ErrStaleLevel) }
+
+func Classify(err error) string {
+	if err == nil {
+		return "ok"
+	}
+	if IsLow(err) {
+		return "head_low"
+	}
+	if IsHigh(err) {
+		return "head_high"
+	}
+	if IsStale(err) {
+		return "stale_level"
+	}
+	return "head_bad"
+}
