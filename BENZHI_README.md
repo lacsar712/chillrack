@@ -1,6 +1,6 @@
-# HookRelay
+# chillrack
 
-Signed ingress + reliable outbound webhook delivery (retry, circuit breaker, rate limit, DLQ, replay).
+chillrack 是一套工业冷却机组架工业过程控制系统，用于冷水机压缩机、集管流量设定与槽位路由协调。
 
 ## Requirements
 
